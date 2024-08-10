@@ -33,11 +33,12 @@ class TestCheckAmazonAddToCart(unittest.TestCase):
         chrome_options.add_argument("--disable-notifications")
         self.driver = webdriver.Chrome(chrome_options)
         self.driver.maximize_window()
+        self.driver.get(self.base_url)
         self.driver.implicitly_wait(10)
 
     def test_check_amazon_add_to_cart(self):
         # Sonra driver i Amazon anasayfasina gonderelim.
-        self.driver.get(self.base_url)
+
         # Kısa bir bekleme ekliyoruz.
         self.driver.implicitly_wait(10)
         # Burada karsimiza cikan cookie yi gecmek icin "Kabul" butonun locatini alip, tikliyoruz.
