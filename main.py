@@ -65,28 +65,52 @@ class TestCheckAmazonAddToCart(unittest.TestCase):
         # Tarayıcıda bir sayfada 48 urun gosteriliyor, bu baglamda 2. sayfa 49+ urunleri gosterecek.
         # Guven Hoca'nın dersinde iken benzer dogrulamayı assertIn ile yapmıştık, ben burada assertTrue kullanacagım.
         time.sleep(2)
-        SECOND_PAGE_TITLE = (By.XPATH, "//*[text()= '30.000 üzeri sonuç arasından 49-96 arası gösteriliyor. Aranan ürün:']")
+        SECOND_PAGE_TITLE = (By.XPATH, "//*[contains(text(), 'sonuç arasından 49-96')]")
         text = self.driver.find_element(*SECOND_PAGE_TITLE).text
         self.assertIn(" 49-96 arası", text)
 
         # Simdi taskımızda bizden istendigi uzere 5. satır ve 1. sutundaki elementi locate edip tiklayalaim.
-
         FIFTH_ROW_FIRST_COLOUMN = (By.XPATH, "(//img[@class='s-image'])[21]")
         product_element = self.driver.find_element(*FIFTH_ROW_FIRST_COLOUMN)
-        product_name = product_element.get_attribute("alt").lower().strip()  # Küçük harf ve boşluk kırpma işlemi
+
+        # Elementin locatini aldık fakat gorevde bizden tikalanan urun ile sepete eklenen urunun aynı oldugunun
+        # dogrulanmasi isteniyor. Bu yuzden urun tıklanmadan once attribute nu alip, kucuk harfe cevirip,
+        # bosluklardan temizliyoruz ve sonra tikliyoruz.
+        product_name = product_element.get_attribute("alt").lower().strip()
         product_element.click()
 
-        self.driver.implicitly_wait(20)  # 20 saniyelik implicit wait
+        # Bu asamada ise acılan urun sayfasindaki basligi aliyoruz ve acilan urun ismi olarak
+        # atiyoruz boylece karsilastirma yapabilecegiz.
+        self.driver.implicitly_wait(20)
         product_title_element = self.driver.find_element(By.ID, "productTitle")
+        opened_product_name = product_title_element.text.lower().strip()
 
-        opened_product_name = product_title_element.text.lower().strip()  # Küçük harf ve boşluk kırpma işlemi
-
-        # Benzerlik oranını hesapla
+        # Daha onceki denemelerde hatalar aldım cunku illa ki urun isminde bazı farkliliklar oluyordu.
+        # Bu yüzden arastırma yapıp benzerlik oranından yaralanmaya karar verdim. Yani % 80 i benzer ise geciyor.
         similarity_ratio = SequenceMatcher(None, product_name, opened_product_name).ratio()
 
-        # 4. Karşılaştırma yapmak (Benzerlik oranı %80'in üzerinde mi?)
+        # Burada da karsilastirma yapip dogruluyoruz.
         threshold = 0.8
-        assert similarity_ratio >= threshold, f"Tıklanan ürün ({product_name}) ile açılan ürün ({opened_product_name}) yeterince benzer değil (benzerlik oranı: {similarity_ratio:.2f})."
+        assert similarity_ratio >= threshold, f"Tıklanan ürün ile açılan ürün  yeterince benzer değil)."
+
+        # Urunu de dogruladiktan sonra sepetimize ekleyelim.
+        ADD_TO_CART = (By.ID, "add-to-cart-button")
+        self.driver.find_element(*ADD_TO_CART).click()
+
+        # Sonraki adimda sepet sayfasinda oldugumuzun dogrulanmasi isteniyor. Bunun icin once sepete gidelim.
+        GO_TO_CART = (By.ID, "sw-gtc")
+        self.driver.find_element(*GO_TO_CART).click()
+
+        # Simdi de sepet sayfasinda oldugumuzu dogrulayalim. Bunun icin "Alısverisi Tamamla" butonunun locatini alalım
+        # ve gorunur olup olmadigi ile dogrulayalim.
+        self.driver.implicitly_wait(5)
+        CART_PAGE = self.driver.find_element(By.NAME, "proceedToRetailCheckout")
+        assert CART_PAGE.is_displayed(), "Sepetim sayfasinda degilsin."
+
+        # Son adim olarak da anasayfaya donelim ve tarayicidan cikalim.
+        MAIN_LOGO = (By.ID, "nav-logo-sprites")
+        self.driver.find_element(*MAIN_LOGO).click()
+        self.driver.quit()
 
 
 
@@ -106,77 +130,5 @@ class TestCheckAmazonAddToCart(unittest.TestCase):
 
 
 
-        # FIFTH_ROW_FIRST_COLOUMN = (By.XPATH, "(//img[@class='s-image'])[21]")
-        # product_element = self.driver.find_element(*FIFTH_ROW_FIRST_COLOUMN)
-        # product_name = product_element.get_attribute("alt")
-        # product_element.click()
-        #
-        # self.driver.implicitly_wait(20)  # 10 saniyelik implicit wait
-        # product_title_element = self.driver.find_element(By.ID, "productTitle")
-        #
-        # opened_product_name = product_title_element.text.strip()
-        #
-        # # 4. Karşılaştırma yapmak
-        # assert product_name in opened_product_name, f"Tıklanan ürün ({product_name}) ile açılan ürün ({opened_product_name}) eşleşmiyor."
 
 
-
-        # FIFTH_ROW_FIRST_COLOUMN = (By.XPATH, "(//img[@class='s-image'])[21]")
-        # product_element = self.driver.find_element(*FIFTH_ROW_FIRST_COLOUMN)
-        # product_name = product_element.get_attribute("alt")
-        #
-        # # 2. Ürüne tıklamak
-        # product_element.click()
-        #
-        # # 3. Yeni sayfada ürün metnini almak (Örneğin, ürün başlığı)
-        # # Bekleme kullanarak sayfanın yüklenmesini sağlıyoruz
-        # time.sleep(2)
-        # product_title_element = self.driver.find_element(By.ID, "productTitle")
-        # opened_product_name = product_title_element.text.strip()
-
-       # self.assertEqual(product_name, opened_product_name, "Ürün adları eşleşmiyor.")
-
-
-
-
-
-        # time.sleep(2)
-        # FIFTH_ROW_FIRST_COLOUMN = (By.XPATH, "(//img[@class='s-image'])[21]")
-        # element = self.driver.find_element(*FIFTH_ROW_FIRST_COLOUMN)
-        # self.driver.execute_script("arguments[0].scrollIntoView();", element)
-        # element.click()
-
-
-
-
-
-        #
-
-
-
-        # CATEGORY_ERKEK = (By.LINK_TEXT, "ERKEK")
-        # erkek = self.driver.find_element(*CATEGORY_ERKEK)
-        # hover = ActionChains(self.driver).move_to_element(erkek)
-        # hover.perform()
-        # CATEGORY_KAZAK = (By.LINK_TEXT, "Kazak")
-        # self.driver.find_element(*CATEGORY_KAZAK).click()
-        # KAZAK_BREADCRUMB = (By.LINK_TEXT, "Erkek Kazak")
-        # kazak = self.driver.find_element(*KAZAK_BREADCRUMB).text
-        # self.assertIn('Kazak', kazak, 'Kazak kategorisinde değilsin.')
-        # QUICKFILTER_NEW = (By.CLASS_NAME, 'quick-filters__item--newest')
-        # self.driver.find_element(*QUICKFILTER_NEW).click()
-        # PROCUCT_IMAGE = (By.CLASS_NAME, 'product-image__image')
-        # self.driver.find_element(*PROCUCT_IMAGE).click()
-        # BEDEN_SECENEKLERI = (By.CSS_SELECTOR, 'a:not(.disabledNotSelected)[data-tracking-label="BedenSecenekleri"]')
-        # self.driver.find_element(*BEDEN_SECENEKLERI).click()
-        # ADD_TO_CART = (By.ID, 'pd_add_to_cart')
-        # self.driver.find_element(*ADD_TO_CART).click()
-        # CART_COUNT = (By.CLASS_NAME, 'badge-circle')
-        # self.assertEqual('1', self.driver.find_element(*CART_COUNT).text,
-        #                  "Sepete eksik veya hiç ürün eklenmedi")
-        # self.driver.find_element(*CART_COUNT).click()
-        # self.assertIn('sepetim', self.driver.current_url, "Sepet sayfasında değilsin.")
-        # MAIN_LOGO = (By.CLASS_NAME, 'main-header-logo')
-        # self.driver.find_element(*MAIN_LOGO).click()
-        # self.driver.quit()
-        #
